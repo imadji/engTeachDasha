@@ -12,6 +12,9 @@ const API_BASE_URL = 'https://flashcards-api.vip-obzor.workers.dev';
 // Единственный ключ в localStorage — только для сохранения выбранной роли ('student' | 'teacher')
 const ROLE_STORAGE_KEY = 'englishFlashcardsUserRole';
 
+// Ключ для хранения выбранной темы оформления ('light' | 'dark')
+const THEME_STORAGE_KEY = 'englishFlashcardsTheme';
+
 // Заглушка на случай, если ссылка на картинку битая или недоступна (SVG Data URI)
 const FALLBACK_IMAGE_URI =
   'data:image/svg+xml;charset=UTF-8,' +
@@ -92,6 +95,54 @@ function stripMarkdownPreview(markdownText) {
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/* ==========================================================================
+   Работа с темой оформления (светлая / тёмная, сохраняется в localStorage)
+   ========================================================================== */
+
+/**
+ * Применение темы оформления к документу и обновление подсказки кнопки
+ */
+function applyTheme(theme) {
+  const isDark = theme === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+
+  const themeBtn = document.getElementById('themeToggleBtn');
+  if (themeBtn) {
+    themeBtn.title = isDark ? 'Включить светлую тему' : 'Включить тёмную тему';
+  }
+}
+
+/**
+ * Загрузка сохранённой темы из localStorage (по умолчанию — светлая)
+ */
+function loadSavedTheme() {
+  try {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+      return savedTheme;
+    }
+  } catch (err) {
+    console.warn('Не удалось прочитать тему из localStorage:', err);
+  }
+  return 'light';
+}
+
+/**
+ * Переключение темы оформления и сохранение выбора
+ */
+function toggleTheme() {
+  const isDarkNow = document.documentElement.getAttribute('data-theme') === 'dark';
+  const nextTheme = isDarkNow ? 'light' : 'dark';
+
+  applyTheme(nextTheme);
+
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+  } catch (err) {
+    console.warn('Не удалось сохранить тему в localStorage:', err);
+  }
 }
 
 /* ==========================================================================
@@ -1561,6 +1612,12 @@ function setupScriptCollapseButton(btnId, wrapperId, textId, iconId) {
 }
 
 function initApp() {
+  // 0. Применяем сохранённую тему оформления (светлая по умолчанию)
+  applyTheme(loadSavedTheme());
+
+  // Переключение темы кнопкой в шапке
+  document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
+
   // 1. Проверяем, была ли ранее выбрана роль в localStorage
   const savedRole = loadSavedRole();
   if (savedRole) {

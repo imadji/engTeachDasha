@@ -33,16 +33,43 @@
         </span>
       </button>
 
-      <!-- Панель текущей роли и смены роли в углу шапки -->
-      <div class="header-actions hidden" id="headerRoleControls">
-        <span class="role-current-pill" id="currentRoleBadge">Роль: Ученик</span>
-        <button type="button" class="btn btn-secondary btn-sm" id="changeRoleBtn" title="Выбрать другую роль (Ученик / Учитель)">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <polyline points="16 11 18 13 22 9"></polyline>
+      <!-- Правая панель в шапке: переключение роли + кнопка переключения темы -->
+      <div class="header-right">
+        <div class="header-actions hidden" id="headerRoleControls">
+          <span class="role-current-pill" id="currentRoleBadge">Роль: Ученик</span>
+          <button type="button" class="btn btn-secondary btn-sm" id="changeRoleBtn" title="Выбрать другую роль (Ученик / Учитель)">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <polyline points="16 11 18 13 22 9"></polyline>
+            </svg>
+            <span>Сменить роль</span>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          class="theme-toggle-btn"
+          id="themeToggleBtn"
+          title="Переключить тему оформления (Светлая / Тёмная)"
+          aria-label="Переключить тему оформления"
+        >
+          <!-- Иконка луны (показывается в светлой теме) -->
+          <svg class="icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
           </svg>
-          <span>Сменить роль</span>
+          <!-- Иконка солнца (показывается в тёмной теме) -->
+          <svg class="icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2"></path>
+            <path d="M12 20v2"></path>
+            <path d="m4.93 4.93 1.41 1.41"></path>
+            <path d="m17.66 17.66 1.41 1.41"></path>
+            <path d="M2 12h2"></path>
+            <path d="M20 12h2"></path>
+            <path d="m6.34 17.66-1.41 1.41"></path>
+            <path d="m19.07 4.93-1.41 1.41"></path>
+          </svg>
         </button>
       </div>
     </div>

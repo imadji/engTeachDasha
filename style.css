@@ -47,6 +47,37 @@
   --transition-smooth: 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Тёмная тема оформления */
+[data-theme="dark"] {
+  --bg-main: #161920;
+  --bg-surface: #212631;
+  --bg-pastel-blue: #273142;
+  --bg-pastel-sage: #22352c;
+  --bg-pastel-peach: #332925;
+  --bg-pastel-lavender: #2d273b;
+  --bg-pastel-amber: #352e20;
+
+  --primary: #8ab0d8;
+  --primary-hover: #a2c3e6;
+  --primary-soft: #2a3648;
+
+  --accent-sage: #76aa89;
+  --accent-sage-hover: #8cc09f;
+
+  --text-main: #f1f3f7;
+  --text-secondary: #b0b8c5;
+  --text-muted: #7f8897;
+
+  --border-color: #323948;
+  --danger: #e07070;
+  --danger-hover: #ec8686;
+  --danger-soft: #3d2427;
+
+  --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 10px 26px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
 /* Сброс базовых отступов */
 *,
 *::before,
@@ -174,6 +205,54 @@ h1, h2, h3, h4, .brand-title {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* Правая группа в шапке: панель роли + кнопка темы */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Аккуратная круглая кнопка переключения темы */
+.theme-toggle-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.theme-toggle-btn:hover {
+  background: var(--bg-pastel-blue);
+  color: var(--primary-hover);
+  border-color: #cfdbe8;
+  transform: translateY(-1px);
+}
+
+.theme-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+/* Видимость иконок темы: луна в светлой теме, солнце в тёмной */
+.theme-icon-sun {
+  display: none;
+}
+
+[data-theme="dark"] .theme-icon-sun {
+  display: block;
+}
+
+[data-theme="dark"] .theme-icon-moon {
+  display: none;
 }
 
 .role-current-pill {
@@ -1046,14 +1125,15 @@ h1, h2, h3, h4, .brand-title {
   box-shadow: var(--shadow-sm);
 }
 
-/* Нижняя часть карточки: текст по центру */
+/* Нижняя часть карточки: английский текст слева под картинкой */
 .flashcard-body {
   padding: 18px 16px 16px;
-  text-align: center;
+  text-align: left;
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: flex-start;
   gap: 6px;
 }
 
@@ -1233,14 +1313,14 @@ h1, h2, h3, h4, .brand-title {
   display: block;
 }
 
-/* Блок с английским словом на лицевой стороне (аккуратно под картинкой, не поверх) */
+/* Блок с английским словом на лицевой стороне (аккуратно под картинкой, слева) */
 .training-front-text-block {
-  padding: 18px 24px 14px;
+  padding: 16px 24px 14px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  text-align: center;
+  text-align: left;
   gap: 8px;
   background: var(--bg-surface);
   border-top: 1px solid var(--border-color);
@@ -1254,12 +1334,12 @@ h1, h2, h3, h4, .brand-title {
 
 .training-back-content {
   flex: 1;
-  padding: 28px 24px;
+  padding: 24px 24px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  text-align: center;
+  text-align: left;
   gap: 12px;
 }
 
@@ -1870,4 +1950,125 @@ h1, h2, h3, h4, .brand-title {
   .lesson-header-buttons .btn {
     flex: 1 1 auto;
   }
+}
+
+/* ==========================================================================
+   Тёмная тема: переопределение фиксированных светлых цветов
+   ========================================================================== */
+
+[data-theme="dark"] .app-header {
+  background: rgba(33, 38, 49, 0.92);
+}
+
+[data-theme="dark"] .role-current-pill,
+[data-theme="dark"] .inline-card-editor {
+  border-color: #3a4356;
+}
+
+[data-theme="dark"] .role-current-pill.is-teacher {
+  color: #b9a5e8;
+  border-color: #443a5e;
+}
+
+[data-theme="dark"] .role-choice-card,
+[data-theme="dark"] .checkbox-card,
+[data-theme="dark"] .modal-card-row,
+[data-theme="dark"] .flashcard-toolbar,
+[data-theme="dark"] .form-input,
+[data-theme="dark"] .form-textarea {
+  background: #1b2029;
+}
+
+[data-theme="dark"] .role-choice-card:hover {
+  background: var(--bg-surface);
+}
+
+[data-theme="dark"] .form-input:focus,
+[data-theme="dark"] .form-textarea:focus {
+  background: #232936;
+}
+
+[data-theme="dark"] .flip-hint,
+[data-theme="dark"] .flashcard-number-badge,
+[data-theme="dark"] .training-card-label {
+  background: rgba(33, 38, 49, 0.92);
+}
+
+[data-theme="dark"] .script-panel-header {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="dark"] .script-panel-student {
+  background: #1d222c;
+}
+
+[data-theme="dark"] .markdown-body strong {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .markdown-body blockquote {
+  color: #c7cdd8;
+  background: rgba(138, 176, 216, 0.12);
+}
+
+[data-theme="dark"] .markdown-body code {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="dark"] .markdown-body pre {
+  background: #12151c;
+}
+
+[data-theme="dark"] .training-progress-bar {
+  background: #323948;
+}
+
+[data-theme="dark"] .spinner {
+  border-color: #323948;
+  border-top-color: var(--primary);
+}
+
+[data-theme="dark"] .skeleton-card {
+  background: linear-gradient(90deg, #232936 25%, #2b3240 50%, #232936 75%);
+  background-size: 200% 100%;
+}
+
+[data-theme="dark"] .btn-ghost:hover {
+  background: rgba(138, 176, 216, 0.14);
+}
+
+[data-theme="dark"] .badge-published {
+  color: #8cc09f;
+}
+
+[data-theme="dark"] .badge-draft {
+  color: #d9b96e;
+}
+
+[data-theme="dark"] .error-banner {
+  color: #f0b9b9;
+  border-color: #5a3336;
+}
+
+[data-theme="dark"] .preview-notice-banner {
+  color: #c4b5ec;
+  border-color: #443a5e;
+}
+
+[data-theme="dark"] .training-back-thumb-wrap {
+  border-color: #323948;
+}
+
+[data-theme="dark"] .training-card-main-text.is-translation {
+  color: #c7cdd8;
+}
+
+[data-theme="dark"] .toast {
+  background: #f1f3f7;
+  color: #161920;
+}
+
+[data-theme="dark"] .toast.toast-error {
+  background: #e07070;
+  color: #ffffff;
 }
