@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>English Flashcards — Облачная платформа уроков английского</title>
+  <!-- Подключение шрифтов Google Fonts (Nunito и Inter) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <!-- Подключение стилей приложения -->
+  <link rel="stylesheet" href="style.css" />
+  <!-- Подключение библиотеки Marked для рендеринга Markdown-скриптов через CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <!-- Шапка приложения -->
+  <header class="app-header">
+    <div class="container header-inner">
+      <button type="button" class="brand-logo" id="logoHomeBtn" aria-label="На главную">
+        <span class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+            <path d="m9 10 2 2 4-4"></path>
+          </svg>
+        </span>
+        <span class="brand-text">
+          <span class="brand-title">English Flashcards</span>
+          <span class="brand-subtitle" id="headerRoleSubtitle">Интерактивные уроки и карточки</span>
+        </span>
+      </button>
+
+      <!-- Панель текущей роли и смены роли в углу шапки -->
+      <div class="header-actions hidden" id="headerRoleControls">
+        <span class="role-current-pill" id="currentRoleBadge">Роль: Ученик</span>
+        <button type="button" class="btn btn-secondary btn-sm" id="changeRoleBtn" title="Выбрать другую роль (Ученик / Учитель)">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <polyline points="16 11 18 13 22 9"></polyline>
+          </svg>
+          <span>Сменить роль</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Основной контейнер экранов (SPA-навигация через CSS-классы) -->
+  <main class="container main-content">
+    <!-- Плашка ошибки соединения с сервером -->
+    <div id="networkErrorBanner" class="error-banner hidden" role="alert">
+      <div class="error-banner-text">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span id="networkErrorMessage">Не удалось загрузить данные. Проверьте соединение.</span>
+      </div>
+      <button type="button" class="btn btn-secondary btn-sm" id="retryLoadBtn">Повторить</button>
+    </div>
+
+    <!-- ЭКРАН 0: Приветствие и выбор роли («Я ученик» / «Я учитель») -->
+    <section id="screenRole" class="screen active" aria-labelledby="roleWelcomeTitle">
+      <div class="role-screen-wrapper">
+        <div class="role-welcome-card">
+          <span class="welcome-badge">Добро пожаловать в English Flashcards</span>
+          <h1 id="roleWelcomeTitle" class="role-welcome-title">Выберите вашу роль</h1>
+          <p class="role-welcome-subtitle">
+            Мы подготовим удобное рабочее пространство: для прохождения опубликованных уроков или для создания материалов и управления карточками.
+          </p>
+
+          <div class="role-buttons-grid">
+            <!-- Кнопка «Я ученик» -->
+            <button type="button" class="role-choice-card" id="selectStudentRoleBtn">
+              <div class="role-choice-icon student-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                  <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                </svg>
+              </div>
+              <span class="role-choice-title">Я ученик</span>
+              <span class="role-choice-desc">
+                Открывайте опубликованные уроки, читайте конспект занятия и тренируйте слова с 3D-карточками
+              </span>
+            </button>
+
+            <!-- Кнопка «Я учитель» -->
+            <button type="button" class="role-choice-card" id="selectTeacherRoleBtn">
+              <div class="role-choice-icon teacher-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+                </svg>
+              </div>
+              <span class="role-choice-title">Я учитель</span>
+              <span class="role-choice-desc">
+                Создавайте уроки и черновики, пишите Markdown-скрипты для себя и ученика, управляйте флеш-карточками
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ЭКРАН 1: Главный экран (Список уроков для выбранной роли) -->
+    <section id="screenHome" class="screen" aria-labelledby="homeTitle">
+      <div class="screen-header">
+        <div>
+          <h1 id="homeTitle" class="screen-title">Уроки английского</h1>
+          <p id="homeSubtitle" class="screen-subtitle">Выберите урок, чтобы перейти к материалам и флеш-карточкам</p>
+        </div>
+
+        <div class="home-header-actions">
+          <button type="button" class="btn btn-secondary" id="refreshLessonsBtn" title="Обновить список уроков с сервера">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 2v6h-6"></path>
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+              <path d="M3 22v-6h6"></path>
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+            </svg>
+            <span>Обновить</span>
+          </button>
+
+          <!-- Кнопка «Создать урок» (видна только учителю) -->
+          <button type="button" class="btn btn-primary hidden" id="openCreateLessonBtn">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Создать урок</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Индикатор загрузки уроков с сервера (спиннер + скелетоны) -->
+      <div id="loadingLessonsState" class="loading-state hidden" aria-live="polite">
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="loading-text">Загружаем уроки из облака...</p>
+        <div class="skeleton-grid">
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+        </div>
+      </div>
+
+      <!-- Сетка уроков (1 колонка телефон, 2 планшет, 3 десктоп) -->
+      <div id="lessonsGrid" class="lessons-grid"></div>
+
+      <!-- Заглушка, если уроков пока нет -->
+      <div id="emptyLessonsState" class="empty-state hidden">
+        <div class="empty-state-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="16" rx="3"></rect>
+            <line x1="8" y1="10" x2="16" y2="10"></line>
+            <line x1="8" y1="14" x2="13" y2="14"></line>
+          </svg>
+        </div>
+        <h3 id="emptyLessonsTitle">Уроков пока нет</h3>
+        <p id="emptyLessonsDesc">Здесь появятся опубликованные уроки.</p>
+        <button type="button" class="btn btn-primary hidden" id="emptyCreateLessonBtn">Создать первый урок</button>
+      </div>
+    </section>
+
+    <!-- ЭКРАН 2: Просмотр урока (Markdown-скрипты + сетка карточек + управление для учителя) -->
+    <section id="screenLesson" class="screen" aria-labelledby="lessonViewTitle">
+      <div class="lesson-nav-bar">
+        <button type="button" class="btn btn-ghost" id="backToHomeBtn">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          <span>К списку уроков</span>
+        </button>
+
+        <div class="lesson-meta-group">
+          <span id="lessonStatusBadge" class="badge hidden"></span>
+          <div class="lesson-Meta-pill" id="lessonMetaInfo"></div>
+        </div>
+      </div>
+
+      <!-- Плашка режима предпросмотра «как ученик» для учителя -->
+      <div id="studentPreviewNotice" class="preview-notice-banner hidden">
+        <div class="preview-notice-text">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          <span>Режим предпросмотра: вы видите этот урок глазами ученика</span>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="exitPreviewModeBtn">Вернуться в режим учителя</button>
+      </div>
+
+      <div class="lesson-header-card">
+        <div class="lesson-title-row">
+          <h1 id="lessonViewTitle" class="screen-title">Название урока</h1>
+          <div class="lesson-header-buttons">
+            <!-- Кнопка запуска режима тренировки -->
+            <button type="button" class="btn btn-accent" id="startTrainingBtn">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span>Режим тренировки</span>
+            </button>
+
+            <!-- Кнопка «Предпросмотр» (видна только учителю) -->
+            <button type="button" class="btn btn-secondary hidden" id="togglePreviewStudentBtn" title="Посмотреть урок в режиме «как ученик»">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <span id="togglePreviewBtnText">Предпросмотр</span>
+            </button>
+
+            <!-- Кнопка редактирования урока (видна только учителю) -->
+            <button type="button" class="btn btn-secondary hidden" id="editCurrentLessonBtn">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+              </svg>
+              <span>Редактировать урок</span>
+            </button>
+
+            <!-- Кнопка удаления урока (видна только учителю) -->
+            <button type="button" class="btn btn-danger-soft hidden" id="deleteCurrentLessonBtn" title="Удалить урок">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span>Удалить</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Блок 1: Скрипт для учителя (виден только учителю вне режима предпросмотра) -->
+        <div id="teacherScriptPanel" class="script-panel script-panel-teacher hidden">
+          <div class="script-panel-header">
+            <div class="script-panel-title">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span>Скрипт для учителя (методический план)</span>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" id="toggleTeacherScriptBtn" aria-expanded="true">
+              <span id="toggleTeacherScriptText">Свернуть</span>
+              <svg class="icon chevron-icon" id="toggleTeacherScriptIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="18 15 12 9 6 15"></polyline>
+              </svg>
+            </button>
+          </div>
+          <div id="teacherScriptWrapper" class="script-content-wrapper">
+            <div id="teacherScriptContent" class="markdown-body"></div>
+          </div>
+        </div>
+
+        <!-- Блок 2: Скрипт урока для ученика (рендерится из studentScript в формате Markdown) -->
+        <div id="studentScriptPanel" class="script-panel script-panel-student">
+          <div class="script-panel-header">
+            <div class="script-panel-title">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+              </svg>
+              <span id="studentScriptHeading">Скрипт урока</span>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" id="toggleStudentScriptBtn" aria-expanded="true">
+              <span id="toggleStudentScriptText">Свернуть</span>
+              <svg class="icon chevron-icon" id="toggleStudentScriptIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="18 15 12 9 6 15"></polyline>
+              </svg>
+            </button>
+          </div>
+          <div id="studentScriptWrapper" class="script-content-wrapper">
+            <div id="studentScriptContent" class="markdown-body"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Панель заголовка карточек урока -->
+      <div class="cards-section-header">
+        <div>
+          <h2 class="section-subtitle">Флеш-карточки урока</h2>
+          <p class="section-hint" id="cardsSectionHint">Слова и выражения для изучения</p>
+        </div>
+        <!-- Кнопка быстрого добавления карточки (видна только учителю) -->
+        <button type="button" class="btn btn-primary hidden" id="openAddCardBtn">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Добавить карточку</span>
+        </button>
+      </div>
+
+      <!-- Сетка флеш-карточек (1 колонка телефон, 2 планшет, 3-4 десктоп) -->
+      <div id="cardsGrid" class="cards-grid"></div>
+
+      <!-- Заглушка, если в уроке нет карточек -->
+      <div id="emptyCardsState" class="empty-state hidden">
+        <div class="empty-state-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+        </div>
+        <h3>В этом уроке пока нет флеш-карточек</h3>
+        <p id="emptyCardsDesc">Карточки скоро появятся.</p>
+        <button type="button" class="btn btn-primary hidden" id="emptyAddCardBtn">Добавить первую карточку</button>
+      </div>
+    </section>
+
+    <!-- ЭКРАН 3: Режим тренировки (крупная 3D-карточка) -->
+    <section id="screenTraining" class="screen" aria-labelledby="trainingLessonTitle">
+      <div class="training-top-bar">
+        <button type="button" class="btn btn-ghost" id="exitTrainingBtn">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          <span>Вернуться к уроку</span>
+        </button>
+
+        <div class="training-title-wrap">
+          <span class="training-mode-badge">Режим тренировки</span>
+          <h2 id="trainingLessonTitle" class="training-lesson-title">Название урока</h2>
+        </div>
+
+        <div class="training-counter" id="trainingCounter" aria-live="polite">1 / 1</div>
+      </div>
+
+      <!-- Полоса прогресса -->
+      <div class="training-progress-bar" aria-hidden="true">
+        <div class="training-progress-fill" id="trainingProgressFill"></div>
+      </div>
+
+      <!-- Сцена с 3D-карточкой -->
+      <div class="training-stage">
+        <div
+          id="trainingCardContainer"
+          class="flip-card-scene"
+          tabindex="0"
+          role="button"
+          aria-label="Флеш-карточка. Нажмите или используйте пробел, чтобы перевернуть карточку"
+        >
+          <div id="trainingFlipCard" class="flip-card-inner">
+            <!-- Лицевая сторона: только изображение -->
+            <div class="flip-card-face flip-card-front">
+              <div class="training-image-box">
+                <img id="trainingCardImage" src="" alt="Иллюстрация к карточке" />
+              </div>
+              <div class="flip-hint">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 2v6h-6"></path>
+                  <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+                  <path d="M3 22v-6h6"></path>
+                  <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+                </svg>
+                <span>Нажмите на карточку или клавишу «Пробел», чтобы увидеть текст</span>
+              </div>
+            </div>
+
+            <!-- Обратная сторона: английский текст и перевод/транскрипция -->
+            <div class="flip-card-face flip-card-back">
+              <div class="training-back-content">
+                <div class="training-back-thumb-wrap">
+                  <img id="trainingCardBackThumb" src="" alt="" class="training-back-thumb" />
+                </div>
+                <span class="training-card-label">English</span>
+                <h3 id="trainingCardText" class="training-card-main-text"></h3>
+                <p id="trainingCardTranslation" class="training-card-translation"></p>
+              </div>
+              <div class="flip-hint">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 2v6h-6"></path>
+                  <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+                  <path d="M3 22v-6h6"></path>
+                  <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+                </svg>
+                <span>Нажмите снова, чтобы вернуться к картинке</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Кнопки управления в режиме тренировки -->
+      <div class="training-controls">
+        <button type="button" class="btn btn-secondary btn-lg" id="prevCardBtn">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+          <span>Назад</span>
+        </button>
+
+        <button type="button" class="btn btn-primary btn-lg" id="flipCardBtn">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 2v6h-6"></path>
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+            <path d="M3 22v-6h6"></path>
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+          </svg>
+          <span>Перевернуть</span>
+        </button>
+
+        <button type="button" class="btn btn-secondary btn-lg" id="nextCardBtn">
+          <span>Вперёд</span>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+      <p class="training-keyboard-tip">Подсказка: используйте клавиши <strong>Пробел</strong> (переворот) и стрелки <strong>← / →</strong> (листание)</p>
+    </section>
+  </main>
+
+  <!-- МОДАЛЬНОЕ ОКНО 1: Создание / Редактирование урока (Полный редактор для учителя) -->
+  <div id="lessonModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="lessonModalTitle">
+    <div class="modal-window modal-window-lg">
+      <div class="modal-header">
+        <h2 id="lessonModalTitle" class="modal-title">Создать урок</h2>
+        <button type="button" class="modal-close-btn" data-close-modal="lessonModal" aria-label="Закрыть окно">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="lessonForm" class="modal-form" novalidate>
+        <input type="hidden" id="lessonIdInput" />
+
+        <div class="form-row-top">
+          <div class="form-group form-group-grow">
+            <label for="lessonTitleInput" class="form-label">Название урока <span class="required-star">*</span></label>
+            <input
+              type="text"
+              id="lessonTitleInput"
+              class="form-input"
+              placeholder="Например: Ordering at a Cozy Café (A2–B1)"
+              maxlength="140"
+              required
+            />
+            <span class="form-error" id="lessonTitleError"></span>
+          </div>
+
+          <!-- Чекбокс «Опубликован» -->
+          <div class="form-group publish-checkbox-group">
+            <label class="checkbox-card" for="lessonPublishedInput">
+              <input type="checkbox" id="lessonPublishedInput" />
+              <span class="checkbox-label-wrap">
+                <span class="checkbox-title">Опубликован</span>
+                <span class="checkbox-desc">Доступен ученикам</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="scripts-editor-grid">
+          <!-- Скрипт для учителя (Markdown) -->
+          <div class="form-group">
+            <label for="teacherScriptInput" class="form-label">
+              Скрипт для учителя <span class="optional-tag">(Markdown)</span>
+            </label>
+            <textarea
+              id="teacherScriptInput"
+              class="form-textarea"
+              rows="6"
+              placeholder="## План для учителя&#10;1. **Warm-up:** вопросы для разминки&#10;2. *Подсказки* по грамматике и произношению..."
+            ></textarea>
+            <span class="form-hint">Виден только учителю. Поддерживает заголовки `#`, списки, **жирный**, *курсив*, `код` и цитаты `>`.</span>
+          </div>
+
+          <!-- Скрипт для ученика (Markdown) -->
+          <div class="form-group">
+            <label for="studentScriptInput" class="form-label">
+              Скрипт для ученика <span class="optional-tag">(Markdown)</span>
+            </label>
+            <textarea
+              id="studentScriptInput"
+              class="form-textarea"
+              rows="6"
+              placeholder="## Конспект урока&#10;Полезные фразы и диалоги для практики на занятии..."
+            ></textarea>
+            <span class="form-hint">Отображается ученику сверху на странице урока. Рендерится из Markdown.</span>
+          </div>
+        </div>
+
+        <!-- Встроенное управление флеш-карточками внутри формы урока -->
+        <div class="modal-cards-manager">
+          <div class="modal-cards-header">
+            <div>
+              <h3 class="modal-cards-title">Флеш-карточки урока (<span id="modalCardsCount">0</span>)</h3>
+              <p class="form-hint">Добавляйте, редактируйте и меняйте порядок карточек прямо здесь или на странице урока</p>
+            </div>
+          </div>
+
+          <!-- Мини-форма добавления/редактирования карточки внутри модального окна урока -->
+          <div class="inline-card-editor" id="inlineCardEditor">
+            <input type="hidden" id="inlineCardEditIndex" value="-1" />
+            <div class="inline-card-inputs">
+              <div class="inline-field">
+                <label for="inlineCardImageUrl" class="form-label-sm">URL картинки <span class="required-star">*</span></label>
+                <input
+                  type="url"
+                  id="inlineCardImageUrl"
+                  class="form-input form-input-sm"
+                  placeholder="https://images.unsplash.com/..."
+                />
+              </div>
+              <div class="inline-field">
+                <label for="inlineCardText" class="form-label-sm">Текст на английском <span class="required-star">*</span></label>
+                <input
+                  type="text"
+                  id="inlineCardText"
+                  class="form-input form-input-sm"
+                  placeholder="Could I have a latte?"
+                />
+              </div>
+              <div class="inline-field">
+                <label for="inlineCardTranslation" class="form-label-sm">Перевод / транскрипция</label>
+                <input
+                  type="text"
+                  id="inlineCardTranslation"
+                  class="form-input form-input-sm"
+                  placeholder="Можно мне латте?"
+                />
+              </div>
+              <div class="inline-field-btns">
+                <button type="button" class="btn btn-secondary btn-sm" id="inlineSaveCardBtn">
+                  + Добавить карточку
+                </button>
+                <button type="button" class="btn btn-ghost btn-sm hidden" id="inlineCancelCardEditBtn">
+                  Отмена
+                </button>
+              </div>
+            </div>
+            <span class="form-error" id="inlineCardError"></span>
+          </div>
+
+          <!-- Список карточек в модальном окне урока -->
+          <div id="modalCardsList" class="modal-cards-list"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-close-modal="lessonModal">Отмена</button>
+          <button type="submit" class="btn btn-primary" id="saveLessonBtn">Сохранить в облако</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО 2: Быстрое добавление / Редактирование одной флеш-карточки со страницы урока -->
+  <div id="cardModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="cardModalTitle">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h2 id="cardModalTitle" class="modal-title">Добавить флеш-карточку</h2>
+        <button type="button" class="modal-close-btn" data-close-modal="cardModal" aria-label="Закрыть окно">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <form id="cardForm" class="modal-form" novalidate>
+        <input type="hidden" id="cardEditIndexInput" value="-1" />
+
+        <div class="form-group">
+          <label for="cardImageUrlInput" class="form-label">Ссылка на изображение (URL) <span class="required-star">*</span></label>
+          <input
+            type="url"
+            id="cardImageUrlInput"
+            class="form-input"
+            placeholder="https://images.unsplash.com/..."
+            required
+          />
+          <span class="form-hint">Вставьте прямую ссылку на картинку из Unsplash, Pinterest, Google Images или любого сайта.</span>
+          <span class="form-error" id="cardImageUrlError"></span>
+        </div>
+
+        <!-- Предпросмотр изображения в модальном окне -->
+        <div id="cardImagePreviewWrap" class="image-preview-wrap hidden">
+          <img id="cardImagePreview" src="" alt="Предпросмотр" />
+        </div>
+
+        <div class="form-group">
+          <label for="cardTextInput" class="form-label">Текст на английском <span class="required-star">*</span></label>
+          <input
+            type="text"
+            id="cardTextInput"
+            class="form-input"
+            placeholder="Например: Could I have an iced latte, please?"
+            maxlength="200"
+            required
+          />
+          <span class="form-error" id="cardTextError"></span>
+        </div>
+
+        <div class="form-group">
+          <label for="cardTranslationInput" class="form-label">Перевод или транскрипция <span class="optional-tag">(опционально)</span></label>
+          <input
+            type="text"
+            id="cardTranslationInput"
+            class="form-input"
+            placeholder="Например: [kʊd aɪ hæv ən aɪst ˈlɑːteɪ] — Можно мне айс-латте?"
+            maxlength="200"
+          />
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-close-modal="cardModal">Отмена</button>
+          <button type="submit" class="btn btn-primary" id="saveCardBtn">Сохранить карточку</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО 3: Подтверждение удаления -->
+  <div id="confirmModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+    <div class="modal-window modal-window-sm">
+      <div class="modal-header">
+        <h2 id="confirmModalTitle" class="modal-title">Подтвердите действие</h2>
+        <button type="button" class="modal-close-btn" data-close-modal="confirmModal" aria-label="Закрыть окно">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmModalMessage" class="confirm-message"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" data-close-modal="confirmModal">Отмена</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Удалить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Контейнер всплывающих уведомлений (Toast) -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Подключение логики приложения -->
+  <script src="script.js"></script>
+</body>
+</html>
