@@ -1125,15 +1125,15 @@ h1, h2, h3, h4, .brand-title {
   box-shadow: var(--shadow-sm);
 }
 
-/* Нижняя часть карточки: английский текст слева под картинкой */
+/* Нижняя часть карточки: английский текст по центру под картинкой */
 .flashcard-body {
   padding: 18px 16px 16px;
-  text-align: left;
+  text-align: center;
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   gap: 6px;
 }
 
@@ -1247,9 +1247,9 @@ h1, h2, h3, h4, .brand-title {
 }
 
 .flip-card-scene {
-  width: fit-content;
-  max-width: min(100%, 720px);
-  min-width: min(100%, 320px);
+  width: 100%;
+  max-width: 640px;
+  height: 430px;
   perspective: 1200px;
   cursor: pointer;
   outline: none;
@@ -1260,12 +1260,10 @@ h1, h2, h3, h4, .brand-title {
   box-shadow: 0 0 0 4px rgba(124, 156, 191, 0.45), var(--shadow-lg);
 }
 
-/* Grid-стек позволяет лицевой стороне (с картинкой) задавать естественный размер всей 3D-карточки */
 .flip-card-inner {
-  display: grid;
-  grid-template-areas: "card";
   position: relative;
   width: 100%;
+  height: 100%;
   transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
   transform-style: preserve-3d;
   border-radius: var(--radius-lg);
@@ -1277,7 +1275,8 @@ h1, h2, h3, h4, .brand-title {
 }
 
 .flip-card-face {
-  grid-area: card;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   backface-visibility: hidden;
@@ -1295,8 +1294,11 @@ h1, h2, h3, h4, .brand-title {
   background: var(--bg-surface);
 }
 
+/* Картинка занимает всё свободное место и подстраивается под любые пропорции без обрезки */
 .training-image-box {
+  flex: 1;
   width: 100%;
+  min-height: 0;
   overflow: hidden;
   background: var(--bg-pastel-blue);
   display: flex;
@@ -1305,64 +1307,56 @@ h1, h2, h3, h4, .brand-title {
 }
 
 .training-image-box img {
-  width: auto;
-  max-width: 100%;
-  height: auto;
-  max-height: 62vh;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   display: block;
 }
 
-/* Блок с английским словом на лицевой стороне (аккуратно под картинкой, слева) */
+/* Английское слово — аккуратным блоком по центру под картинкой */
 .training-front-text-block {
-  padding: 16px 24px 14px;
+  padding: 16px 24px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  text-align: left;
+  text-align: center;
   gap: 8px;
   background: var(--bg-surface);
   border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
 .flip-card-back {
   transform: rotateY(180deg);
   background: linear-gradient(180deg, #ffffff 0%, var(--bg-pastel-blue) 100%);
-  min-height: 280px;
 }
 
 .training-back-content {
   flex: 1;
-  padding: 24px 24px;
+  padding: 28px 24px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  text-align: left;
+  text-align: center;
   gap: 12px;
 }
 
 .training-back-thumb-wrap {
-  max-width: 120px;
-  max-height: 84px;
+  width: 84px;
+  height: 64px;
   border-radius: 12px;
   overflow: hidden;
   border: 2px solid #ffffff;
   box-shadow: var(--shadow-sm);
   margin-bottom: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .training-back-thumb {
-  width: auto;
-  max-width: 100%;
-  height: auto;
-  max-height: 80px;
-  object-fit: contain;
-  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .training-card-label {
@@ -1902,6 +1896,10 @@ h1, h2, h3, h4, .brand-title {
     grid-template-columns: 1fr 1fr;
   }
 
+  .flip-card-scene {
+    height: 470px;
+  }
+
   .training-card-main-text {
     font-size: 1.9rem;
   }
@@ -1928,6 +1926,10 @@ h1, h2, h3, h4, .brand-title {
 
   .inline-card-inputs {
     grid-template-columns: 1.2fr 1.2fr 1fr auto;
+  }
+
+  .flip-card-scene {
+    height: 500px;
   }
 }
 
