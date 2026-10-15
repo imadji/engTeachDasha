@@ -1248,9 +1248,9 @@ h1, h2, h3, h4, .brand-title {
 
 .flip-card-scene {
   width: 100%;
-  max-width: 640px;
-  height: 430px;
-  perspective: 1200px;
+  max-width: 760px;
+  height: clamp(420px, 68vh, 620px);
+  perspective: 1400px;
   cursor: pointer;
   outline: none;
   -webkit-tap-highlight-color: transparent;
@@ -1288,6 +1288,7 @@ h1, h2, h3, h4, .brand-title {
   flex-direction: column;
   justify-content: space-between;
   overflow: hidden;
+  isolation: isolate;
 }
 
 .flip-card-front {
@@ -1309,13 +1310,14 @@ h1, h2, h3, h4, .brand-title {
 .training-image-box img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
 }
 
 /* Английское слово — аккуратным блоком по центру под картинкой */
 .training-front-text-block {
-  padding: 16px 24px;
+  min-height: 82px;
+  padding: 14px 24px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1329,11 +1331,12 @@ h1, h2, h3, h4, .brand-title {
 
 .flip-card-back {
   transform: rotateY(180deg);
-  background: linear-gradient(180deg, #ffffff 0%, var(--bg-pastel-blue) 100%);
+  background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-pastel-blue) 100%);
 }
 
 .training-back-content {
   flex: 1;
+  min-height: 0;
   padding: 28px 24px;
   display: flex;
   flex-direction: column;
@@ -1377,7 +1380,7 @@ h1, h2, h3, h4, .brand-title {
 }
 
 .training-card-main-text {
-  font-size: 1.6rem;
+  font-size: clamp(1.35rem, 3vw, 2rem);
   font-weight: 800;
   color: var(--text-main);
   max-width: 92%;
@@ -1387,7 +1390,7 @@ h1, h2, h3, h4, .brand-title {
 
 /* Класс для чуть меньшего шрифта перевода на обратной стороне */
 .training-card-main-text.is-translation {
-  font-size: 1.35rem;
+  font-size: clamp(1.2rem, 2.6vw, 1.75rem);
   color: #3f4652;
 }
 
@@ -1896,10 +1899,6 @@ h1, h2, h3, h4, .brand-title {
     grid-template-columns: 1fr 1fr;
   }
 
-  .flip-card-scene {
-    height: 470px;
-  }
-
   .training-card-main-text {
     font-size: 1.9rem;
   }
@@ -1928,9 +1927,6 @@ h1, h2, h3, h4, .brand-title {
     grid-template-columns: 1.2fr 1.2fr 1fr auto;
   }
 
-  .flip-card-scene {
-    height: 500px;
-  }
 }
 
 @media (min-width: 1200px) {
