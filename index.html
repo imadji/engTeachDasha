@@ -350,10 +350,14 @@
           aria-label="Флеш-карточка. Нажмите или используйте пробел, чтобы перевернуть карточку"
         >
           <div id="trainingFlipCard" class="flip-card-inner">
-            <!-- Лицевая сторона: только изображение -->
+            <!-- Лицевая сторона: изображение + английское слово снизу под картинкой -->
             <div class="flip-card-face flip-card-front">
               <div class="training-image-box">
                 <img id="trainingCardImage" src="" alt="Иллюстрация к карточке" />
+              </div>
+              <div class="training-front-text-block">
+                <span class="training-card-label">English</span>
+                <h3 id="trainingCardText" class="training-card-main-text"></h3>
               </div>
               <div class="flip-hint">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -362,19 +366,18 @@
                   <path d="M3 22v-6h6"></path>
                   <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
                 </svg>
-                <span>Нажмите на карточку или клавишу «Пробел», чтобы увидеть текст</span>
+                <span>Нажмите на карточку или клавишу «Пробел», чтобы увидеть перевод</span>
               </div>
             </div>
 
-            <!-- Обратная сторона: английский текст и перевод/транскрипция -->
+            <!-- Обратная сторона: перевод на русском языке -->
             <div class="flip-card-face flip-card-back">
               <div class="training-back-content">
                 <div class="training-back-thumb-wrap">
                   <img id="trainingCardBackThumb" src="" alt="" class="training-back-thumb" />
                 </div>
-                <span class="training-card-label">English</span>
-                <h3 id="trainingCardText" class="training-card-main-text"></h3>
-                <p id="trainingCardTranslation" class="training-card-translation"></p>
+                <span class="training-card-label training-card-label-ru">Перевод</span>
+                <h3 id="trainingCardTranslation" class="training-card-main-text is-translation"></h3>
               </div>
               <div class="flip-hint">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -383,7 +386,7 @@
                   <path d="M3 22v-6h6"></path>
                   <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
                 </svg>
-                <span>Нажмите снова, чтобы вернуться к картинке</span>
+                <span>Нажмите снова, чтобы вернуться к картинке и английскому слову</span>
               </div>
             </div>
           </div>
@@ -524,7 +527,7 @@
                 />
               </div>
               <div class="inline-field">
-                <label for="inlineCardTranslation" class="form-label-sm">Перевод / транскрипция</label>
+                <label for="inlineCardTranslation" class="form-label-sm">Перевод на русский <span class="required-star">*</span></label>
                 <input
                   type="text"
                   id="inlineCardTranslation"
@@ -604,14 +607,17 @@
         </div>
 
         <div class="form-group">
-          <label for="cardTranslationInput" class="form-label">Перевод или транскрипция <span class="optional-tag">(опционально)</span></label>
+          <label for="cardTranslationInput" class="form-label">Перевод на русский <span class="required-star">*</span></label>
           <input
             type="text"
             id="cardTranslationInput"
             class="form-input"
-            placeholder="Например: [kʊd aɪ hæv ən aɪst ˈlɑːteɪ] — Можно мне айс-латте?"
+            placeholder="Например: Можно мне айс-латте, пожалуйста?"
             maxlength="200"
+            required
           />
+          <span class="form-hint">Обязательное поле: перевод показывается ученику на обратной стороне карточки при перевороте.</span>
+          <span class="form-error" id="cardTranslationError"></span>
         </div>
 
         <div class="modal-footer">

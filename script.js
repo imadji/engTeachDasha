@@ -986,16 +986,14 @@ function renderTrainingScreen() {
   attachImageWithFallback(frontImg, currentCard.imageUrl, 'Иллюстрация флеш-карточки');
   attachImageWithFallback(backThumb, currentCard.imageUrl, '');
 
+  // Лицевая сторона: английское слово под картинкой
   document.getElementById('trainingCardText').textContent = currentCard.text;
 
-  const translationEl = document.getElementById('trainingCardTranslation');
-  if (currentCard.translation && currentCard.translation.trim()) {
-    translationEl.textContent = currentCard.translation;
-    translationEl.classList.remove('hidden');
-  } else {
-    translationEl.textContent = '';
-    translationEl.classList.add('hidden');
-  }
+  // Обратная сторона: перевод на русском языке
+  document.getElementById('trainingCardTranslation').textContent =
+    currentCard.translation && currentCard.translation.trim()
+      ? currentCard.translation
+      : 'Перевод не указан';
 
   document.getElementById('prevCardBtn').disabled = state.trainingIndex === 0;
   document.getElementById('nextCardBtn').disabled = state.trainingIndex === total - 1;
@@ -1232,6 +1230,13 @@ function handleInlineCardSave() {
     return;
   }
 
+  // Валидация: перевод на русском обязателен — без него карточку создать нельзя
+  if (!translation) {
+    errorEl.textContent = 'Укажите перевод на русский — он показывается на обратной стороне карточки.';
+    trInput.focus();
+    return;
+  }
+
   const cardObj = { imageUrl, text, translation };
 
   if (editIndex >= 0 && editIndex < state.modalDraftCards.length) {
@@ -1323,11 +1328,14 @@ function openSingleCardModal(cardIndex = -1) {
   const translationInput = document.getElementById('cardTranslationInput');
   const urlError = document.getElementById('cardImageUrlError');
   const textError = document.getElementById('cardTextError');
+  const translationError = document.getElementById('cardTranslationError');
 
   urlError.textContent = '';
   textError.textContent = '';
+  translationError.textContent = '';
   urlInput.classList.remove('input-error');
   textInput.classList.remove('input-error');
+  translationInput.classList.remove('input-error');
 
   if (cardIndex >= 0 && lesson.cards[cardIndex]) {
     const card = lesson.cards[cardIndex];
@@ -1376,6 +1384,7 @@ async function handleSingleCardFormSubmit(event) {
   const translationInput = document.getElementById('cardTranslationInput');
   const urlError = document.getElementById('cardImageUrlError');
   const textError = document.getElementById('cardTextError');
+  const translationError = document.getElementById('cardTranslationError');
   const saveCardBtn = document.getElementById('saveCardBtn');
 
   const imageUrl = urlInput.value.trim();
@@ -1385,8 +1394,10 @@ async function handleSingleCardFormSubmit(event) {
   let hasError = false;
   urlError.textContent = '';
   textError.textContent = '';
+  translationError.textContent = '';
   urlInput.classList.remove('input-error');
   textInput.classList.remove('input-error');
+  translationInput.classList.remove('input-error');
 
   if (!imageUrl || !isValidUrl(imageUrl)) {
     urlError.textContent = 'Укажите корректную ссылку на изображение (https:// или http://).';
@@ -1400,7 +1411,23 @@ async function handleSingleCardFormSubmit(event) {
     hasError = true;
   }
 
-  if (hasError) return;
+  // Валидация: перевод на русском обязателен — без него карточку сохранить нельзя
+  if (!translation) {
+    translationError.textContent = 'Укажите перевод на русский — он показывается на обратной стороне карточки.';
+    translationInput.classList.add('input-error');
+    hasError = true;
+  }
+
+  if (hasError) {
+    if (!imageUrl || !isValidUrl(imageUrl)) {
+      urlInput.focus();
+    } else if (!text) {
+      textInput.focus();
+    } else {
+      translationInput.focus();
+    }
+    return;
+  }
 
   const editIndex = Number(indexInput.value);
   const updatedCards = lesson.cards.map((c) => ({ ...c }));
