@@ -1094,21 +1094,17 @@ h1, h2, h3, h4, .brand-title {
 /* Верхняя часть карточки: адаптивная под реальные пропорции картинки (без обрезки под квадрат/4:3) */
 .flashcard-image-wrap {
   width: 100%;
+  aspect-ratio: 4 / 3;       /* одинаковая высота для всех карточек */
   background-color: var(--bg-pastel-blue);
   position: relative;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .flashcard-image {
   width: 100%;
-  height: auto;
-  max-height: 460px;
-  object-fit: contain;
+  height: 100%;
+  object-fit: cover;         /* картинка заполняет блок, чуть обрезая края */
   display: block;
-  transition: transform 0.4s ease;
 }
 
 .flashcard-number-badge {
@@ -1688,7 +1684,18 @@ h1, h2, h3, h4, .brand-title {
 }
 
 .modal-cards-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 12px;
+}
+
+.modal-cards-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .modal-cards-title {

@@ -1301,6 +1301,70 @@ function handleInlineCardSave() {
 }
 
 /**
+ * Массовая загрузка карточек из JSON-файла в текущий модальный черновик урока.
+ * Поддерживает форматы полей: {imageUrl|image|url, english|text|en, russian|translation|ru}
+ */
+function setupJsonCardsImport() {
+  const btn = document.getElementById('importCardsJsonBtn');
+  const input = document.getElementById('importCardsJsonInput');
+  if (!btn || !input) return;
+
+  btn.addEventListener('click', () => input.click());
+
+  input.addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    try {
+      const fileText = await file.text();
+      const parsed = JSON.parse(fileText);
+
+      // Поддерживаем как массив, так и объект с полем cards / flashcards
+      const list = Array.isArray(parsed)
+        ? parsed
+        : Array.isArray(parsed.cards)
+          ? parsed.cards
+          : Array.isArray(parsed.flashcards)
+            ? parsed.flashcards
+            : [];
+
+      const normalized = [];
+      for (const item of list) {
+        if (!item || typeof item !== 'object') continue;
+
+        const imageUrl = String(
+          item.imageUrl || item.image || item.url || item.picture || ''
+        ).trim();
+        const text = String(
+          item.english || item.text || item.en || item.word || ''
+        ).trim();
+        const translation = String(
+          item.russian || item.translation || item.ru || item.translate || ''
+        ).trim();
+
+        if (imageUrl && text) {
+          normalized.push({ imageUrl, text, translation });
+        }
+      }
+
+      if (normalized.length === 0) {
+        showToast('В файле не нашлось ни одной корректной карточки', true);
+        return;
+      }
+
+      state.modalDraftCards.push(...normalized);
+      renderModalDraftCardsList();
+      showToast(`Загружено карточек из JSON: ${normalized.length}`);
+    } catch (err) {
+      console.error('Ошибка импорта JSON:', err);
+      showToast('Не удалось прочитать JSON-файл', true);
+    } finally {
+      input.value = ''; // сбрасываем input, чтобы можно было выбрать тот же файл повторно
+    }
+  });
+}
+
+/**
  * Сохранение урока из модального окна на сервер (POST /lessons)
  */
 async function handleLessonFormSubmit(event) {
@@ -1342,6 +1406,7 @@ async function handleLessonFormSubmit(event) {
     cards: state.modalDraftCards,
     createdAt: existingLesson ? existingLesson.createdAt : new Date().toISOString()
   };
+  let savedLessonId = null;
 
   state.isSaving = true;
   const originalBtnText = saveBtn.textContent;
@@ -1350,10 +1415,9 @@ async function handleLessonFormSubmit(event) {
 
   try {
     const savedLesson = await saveLessonToApi(payload);
+    savedLessonId = savedLesson.id;
     closeModal('lessonModal');
     showToast(existingId ? 'Урок успешно обновлён в облаке' : 'Урок создан и сохранён в облаке');
-    state.currentLessonId = savedLesson.id;
-    openLessonScreen(savedLesson.id);
   } catch (error) {
     console.error('Ошибка POST /lessons:', error);
     showToast('Не удалось сохранить урок на сервере. Проверьте соединение.', true);
@@ -1361,6 +1425,10 @@ async function handleLessonFormSubmit(event) {
     state.isSaving = false;
     saveBtn.disabled = false;
     saveBtn.textContent = originalBtnText;
+    if (savedLessonId) {
+      state.currentLessonId = savedLessonId;
+      openLessonScreen(savedLessonId);   // ← рендер после isSaving = false
+    }
   }
 }
 
@@ -1500,7 +1568,6 @@ async function handleSingleCardFormSubmit(event) {
       cards: updatedCards
     });
     closeModal('cardModal');
-    renderLessonScreen();
     showToast(editIndex >= 0 ? 'Карточка обновлена' : 'Карточка добавлена в урок');
   } catch (error) {
     console.error('Ошибка сохранения карточки:', error);
@@ -1509,6 +1576,7 @@ async function handleSingleCardFormSubmit(event) {
     state.isSaving = false;
     saveCardBtn.disabled = false;
     saveCardBtn.textContent = origText;
+    renderLessonScreen();      // ← сюда
   }
 }
 
@@ -1572,14 +1640,15 @@ function requestDeleteCard(cardIndex) {
 
     const updatedCards = lesson.cards.filter((_, idx) => idx !== cardIndex);
 
+    let success = false;
     try {
       await saveLessonToApi({
         ...lesson,
         cards: updatedCards
       });
       closeModal('confirmModal');
-      renderLessonScreen();
       showToast('Карточка удалена');
+      success = true;
     } catch (error) {
       console.error('Ошибка удаления карточки:', error);
       showToast('Не удалось сохранить изменения на сервере.', true);
@@ -1587,6 +1656,9 @@ function requestDeleteCard(cardIndex) {
       state.isSaving = false;
       confirmBtn.disabled = false;
       confirmBtn.textContent = origText;
+      if (success) {
+        renderLessonScreen();   // ← рендер ПОСЛЕ обнуления isSaving
+      }
     }
   };
 
@@ -1704,7 +1776,9 @@ function initApp() {
   // Встроенный редактор карточек внутри модального окна урока
   document.getElementById('inlineSaveCardBtn').addEventListener('click', handleInlineCardSave);
   document.getElementById('inlineCancelCardEditBtn').addEventListener('click', resetInlineCardEditor);
-
+  document.getElementById('inlineSaveCardBtn').addEventListener('click', handleInlineCardSave);
+  document.getElementById('inlineCancelCardEditBtn').addEventListener('click', resetInlineCardEditor);
+  setupJsonCardsImport();
   // Предпросмотр картинки при вводе URL в отдельной модалке карточки
   document.getElementById('cardImageUrlInput').addEventListener('input', (e) => {
     updateCardImagePreview(e.target.value);
