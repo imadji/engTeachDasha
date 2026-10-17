@@ -101,7 +101,8 @@ async function ensureTeacherAccess(actionHint) {
 
   rememberTeacherToken(token.trim());
   try {
-    await collabFetch('/health');
+    // /health публичный, поэтому для проверки токена используем защищённый список досок.
+    await collabFetch('/boards');
     return true;
   } catch (error) {
     showToast(error.message, true);
@@ -117,6 +118,13 @@ async function ensureTeacherAccess(actionHint) {
  * Загрузка списка досок учителя с сервера
  */
 async function fetchBoards() {
+  // Список досок доступен только учителю и требует токен.
+  if (state.role === 'teacher' && !(await ensureTeacherAccess('для просмотра интерактивных досок'))) {
+    state.boardsLoading = false;
+    renderBoardsScreen();
+    return;
+  }
+
   state.boardsLoading = true;
   renderBoardsScreen();
   try {

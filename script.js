@@ -487,7 +487,16 @@ function selectRoleAndEnter(role) {
   saveUserRole(role);
   state.currentLessonId = null;
   switchScreen('screenHome');
-  fetchLessonsFromApi();
+
+  // Для учителя сразу запрашиваем токен доступа к облачным доскам.
+  // Ученик работает только с опубликованными уроками и ссылками-приглашениями.
+  if (role === 'teacher' && typeof ensureTeacherAccess === 'function') {
+    ensureTeacherAccess('для входа в кабинет учителя').finally(() => {
+      fetchLessonsFromApi();
+    });
+  } else {
+    fetchLessonsFromApi();
+  }
 }
 
 /**
