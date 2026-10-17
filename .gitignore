@@ -1,0 +1,5 @@
+﻿node_modules/
+backend/.wrangler/
+PROMPT*.md
+test.json
+*.local

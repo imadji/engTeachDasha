@@ -47,7 +47,18 @@ const state = {
   trainingIndex: 0,           // индекс текущей карточки в режиме тренировки
   isTrainingFlipped: false,   // перевёрнута ли карточка в тренировке
   draggedCardIndex: null,     // индекс перетаскиваемой карточки (drag-and-drop)
-  confirmCallback: null       // колбэк для модального окна подтверждения удаления
+  confirmCallback: null,      // колбэк для модального окна подтверждения удаления
+
+  // Совместная работа: доски и видеозвонки
+  boards: [],                 // список досок учителя
+  boardsLoading: false,       // идёт ли загрузка списка досок
+  homeTab: 'lessons',         // активная вкладка главного экрана: 'lessons' | 'boards'
+  currentBoardId: null,       // открытая доска
+  currentBoardKey: null,      // ключ приглашения к доске (ученик)
+  currentCallRoomId: null,    // комната видеозвонка
+  currentCallKey: null,       // ключ приглашения к звонку
+  teacherToken: null,         // токен учителя (в памяти вкладки, не в localStorage)
+  lastLessonContext: null     // откуда запущен звонок: { screen, boardId, lessonId }
 };
 
 /* ==========================================================================
@@ -1690,6 +1701,11 @@ function initApp() {
   // Переключение темы кнопкой в шапке
   document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
 
+  // 0.1. Восстанавливаем токен учителя (только в пределах вкладки) и инициализируем модули
+  restoreTeacherToken();
+  if (window.BoardCanvas) BoardCanvas.init();
+  if (window.VideoCall) VideoCall.init();
+
   // 1. Проверяем, была ли ранее выбрана роль в localStorage
   const savedRole = loadSavedRole();
   if (savedRole) {
@@ -1852,6 +1868,72 @@ function initApp() {
       if (state.currentLessonId) openLessonScreen(state.currentLessonId);
     }
   });
+
+  initCollaborationUI();
+}
+
+/**
+ * Инициализация интерфейса совместной работы: вкладки, доски, звонки
+ */
+function initCollaborationUI() {
+  // Вкладки «Уроки / Доски»
+  document.getElementById('tabLessonsBtn')?.addEventListener('click', () => setHomeTab('lessons'));
+  document.getElementById('tabBoardsBtn')?.addEventListener('click', () => setHomeTab('boards'));
+
+  // Список и создание досок
+  document.getElementById('refreshBoardsBtn')?.addEventListener('click', fetchBoards);
+  document.getElementById('createBoardBtn')?.addEventListener('click', openCreateBoardModal);
+  document.getElementById('emptyCreateBoardBtn')?.addEventListener('click', openCreateBoardModal);
+  document.getElementById('boardForm')?.addEventListener('submit', handleBoardFormSubmit);
+
+  // Экран доски
+  document.getElementById('backToHomeFromBoardBtn')?.addEventListener('click', () => {
+    BoardCanvas.close();
+    state.currentBoardId = null;
+    state.currentBoardKey = null;
+    setHomeTab('boards');
+    switchScreen('screenHome');
+  });
+  document.getElementById('boardShareInviteBtn')?.addEventListener('click', () => {
+    if (state.currentBoardId) requestBoardInviteLink(state.currentBoardId);
+  });
+
+  // Запуск звонка с доски
+  document.getElementById('boardStartCallBtn')?.addEventListener('click', () => {
+    createCallRoom({ screen: 'board', boardId: state.currentBoardId, boardKey: state.currentBoardKey });
+  });
+
+  // Запуск звонка из урока
+  document.getElementById('lessonStartCallBtn')?.addEventListener('click', () => {
+    const lesson = getCurrentLesson();
+    createCallRoom({ screen: 'lesson', lessonId: state.currentLessonId });
+  });
+
+  // Экран звонка
+  document.getElementById('joinCallBtn')?.addEventListener('click', () => {
+    joinCallRoom(state.currentCallRoomId);
+  });
+  document.getElementById('callNameInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') joinCallRoom(state.currentCallRoomId);
+  });
+  document.getElementById('hangUpBtn')?.addEventListener('click', exitCallScreen);
+  document.getElementById('exitCallBtn')?.addEventListener('click', exitCallScreen);
+  document.getElementById('shareCallInviteBtn')?.addEventListener('click', () => {
+    if (state.currentCallRoomId && state.currentCallKey) {
+      const link = `${location.origin}${location.pathname}?call=${encodeURIComponent(
+        state.currentCallRoomId
+      )}&key=${encodeURIComponent(state.currentCallKey)}`;
+      showShareLink('Ссылка на звонок', 'Отправьте ученику эту ссылку для присоединения к звонку.', link);
+    } else {
+      showToast('Ссылка доступна только создателю звонка', true);
+    }
+  });
+
+  // Копирование ссылки-приглашения
+  document.getElementById('copyShareLinkBtn')?.addEventListener('click', copyShareLink);
+
+  // Обработка ссылки-приглашения (?board= / ?call=)
+  handleUrlRouting();
 }
 
 // Запуск приложения после полной загрузки DOM
