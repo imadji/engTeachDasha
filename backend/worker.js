@@ -83,7 +83,9 @@ export default {
     const catalog = env.BOARDS.get(env.BOARDS.idFromName('catalog-v1'));
     const get = async key => (await catalog.fetch('https://internal/catalog/get?key=' + encodeURIComponent(key))).json();
     const put = async (key, value) => { const r = await catalog.fetch('https://internal/catalog/put', { method: 'POST', body: JSON.stringify({ key, value }) }); if (!r.ok) fail('Ошибка каталога', 500); };
-    const teacher = async () => !!env.TEACHER_TOKEN && await digest(request.headers.get('X-Teacher-Token') || '') === await digest(env.TEACHER_TOKEN);
+    const reqUrl = new URL(request.url);
+    const providedToken = request.headers.get('X-Teacher-Token') || reqUrl.searchParams.get('token') || '';
+    const teacher = async () => !!env.TEACHER_TOKEN && await digest(providedToken) === await digest(env.TEACHER_TOKEN);
     const requireTeacher = async () => { if (!await teacher()) fail('Введите корректный токен учителя', 403); };
     const rtk = async (path, body) => {
       if (!env.REALTIMEKIT_APP_ID || !env.REALTIMEKIT_API_TOKEN || !env.CLOUDFLARE_ACCOUNT_ID) fail('RealtimeKit ещё не настроен на сервере', 503);

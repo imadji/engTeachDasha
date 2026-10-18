@@ -1,0 +1,13 @@
+<script setup>
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
+import { useAppStore } from '../../stores/appStore';
+import { useLessonsStore } from '../../stores/lessonsStore';
+const app = useAppStore(), store = useLessonsStore();
+const lesson = computed(() => store.getLessonById(app.currentLessonId.value));
+const index = ref(0), flipped = ref(false), ratio = ref(4/3);
+const card = computed(() => lesson.value?.cards[index.value]);
+function step(d) { const next=index.value+d; if(next<0||next>=lesson.value.cards.length) return; index.value=next; flipped.value=false; }
+function key(e) { if(/INPUT|TEXTAREA|BUTTON/.test(e.target.tagName)) return; if(e.code==='Space') {e.preventDefault(); flipped.value=!flipped.value;} if(e.key==='ArrowRight') step(1); if(e.key==='ArrowLeft') step(-1); if(e.key==='Escape') app.lessonsScreen.value='lesson'; }
+onMounted(()=>document.addEventListener('keydown',key)); onBeforeUnmount(()=>document.removeEventListener('keydown',key));
+</script>
+<template><section v-if="card"><div class="section-row"><button class="btn btn-ghost" @click="app.lessonsScreen.value='lesson'">← К уроку</button><h2>{{ lesson.title }}</h2><span class="badge badge-cards">{{ index+1 }} / {{ lesson.cards.length }}</span></div><div class="training-stage"><button class="training-scene" :class="{ flipped }" :style="{ '--photo-ratio': ratio, '--card-width': `${Math.max(310,Math.min(780,ratio*440))}px` }" :aria-label="flipped ? 'Показать английский текст' : 'Показать русский перевод'" :aria-pressed="flipped" @click="flipped=!flipped"><div class="training-inner"><div class="training-face training-front" :aria-hidden="flipped"><img :key="card.imageUrl" :src="card.imageUrl" alt="Иллюстрация карточки" @load="ratio=$event.target.naturalWidth/$event.target.naturalHeight" @error="$event.target.src=store.FALLBACK_IMAGE_URI" /><div class="training-caption"><span class="badge badge-cards">English</span><h3>{{ card.text }}</h3><small>Нажмите, чтобы увидеть перевод</small></div></div><div class="training-face training-back" :aria-hidden="!flipped"><img :src="card.imageUrl" alt="" @error="$event.target.src=store.FALLBACK_IMAGE_URI" /><div class="training-caption"><span class="badge badge-published">Перевод</span><h3>{{ card.translation || 'Перевод не указан' }}</h3><small>Нажмите, чтобы вернуться</small></div></div></div></button></div><div class="training-controls"><button class="btn btn-secondary" :disabled="index===0" @click="step(-1)">← Назад</button><button class="btn btn-primary" @click="flipped=!flipped">Перевернуть</button><button class="btn btn-secondary" :disabled="index===lesson.cards.length-1" @click="step(1)">Вперёд →</button></div></section></template>

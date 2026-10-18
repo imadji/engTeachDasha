@@ -1,5 +1,7 @@
 /* Видеозвонки: SDK загружается только при присоединении к комнате. */
-window.VideoCall = (() => {
+import { useAppStore } from '../stores/appStore';
+const showToast = (message,error) => useAppStore().toast(message,error);
+export const VideoCall = (() => {
   let meeting = null, sdkPromise, generation = 0, joining = false;
   const listeners = [], tiles = new Map();
   const $ = id => document.getElementById(id);

@@ -1,8 +1,10 @@
 /* Интерактивная доска: координаты мира не зависят от размеров экрана. */
-window.BoardCanvas = (() => {
+import { useAppStore } from '../stores/appStore';
+const showToast = (message, error) => useAppStore().toast(message, error);
+export const BoardCanvas = (() => {
   let canvas, ctx, socket, observer, reconnectTimer, frame = 0;
   let objects = [], selected = null, gesture = null, tool = 'select';
-  let active = false, ready = false, pending = false, endpoint, attempt = 0;
+  let active = false, ready = false, pending = false, endpoint, attempt = 0, pendingId = null;
   let width = 1, height = 1, zoom = 1, pan = { x: 0, y: 0 };
   const images = new Map();
   const $ = (id) => document.getElementById(id);
@@ -85,7 +87,7 @@ window.BoardCanvas = (() => {
   }
   function send(message) {
     if (!ready || pending || socket?.readyState !== WebSocket.OPEN) { showToast('Дождитесь подключения и сохранения доски.', true); return false; }
-    pending = true; status('Сохранение…', 'connecting'); socket.send(JSON.stringify(message)); invalidate(); return true;
+    pending = true; pendingId = crypto.randomUUID(); status('Сохранение…', 'connecting'); socket.send(JSON.stringify({ ...message, opId: pendingId })); invalidate(); return true;
   }
   function connect() {
     if (!active) return; ready = false; pending = false; status('Подключение…', 'connecting');
@@ -94,14 +96,15 @@ window.BoardCanvas = (() => {
       if (socket !== ws) return;
       try {
         const msg = JSON.parse(event.data);
-        if (msg.type === 'error') { pending = false; showToast(msg.error, true); return; }
-        if (msg.type === 'state') { objects = msg.state.objects; gesture = null; ready = true; pending = false; attempt = 0; status('Сохранено · Онлайн', 'connected'); invalidate(); }
+        if (msg.type === 'error') { pending = false; if(msg.state) objects = msg.state.objects; status('Изменение отклонено', 'error'); showToast(msg.error, true); invalidate(); return; }
+        if (msg.type === 'state') { objects = msg.state.objects; gesture = null; ready = true; if(!msg.ack || msg.ack === pendingId) pending = false; attempt = 0; status(pending ? 'Сохранение…' : 'Сохранено · Онлайн', 'connected'); invalidate(); }
       } catch { status('Ошибка данных', 'error'); }
     };
     ws.onclose = event => {
       if (socket !== ws || !active) return; ready = false; pending = false; gesture = null;
       if (event.code === 4004) { status('Доска удалена', 'error'); return; }
       status('Связь потеряна · переподключение…', 'error');
+      if(attempt >= 5) { status('Не удалось подключиться. Откройте доску заново.', 'error'); return; }
       reconnectTimer = setTimeout(connect, Math.min(15000, 1000 * 2 ** attempt++));
     };
     ws.onerror = () => status('Ошибка соединения', 'error');
@@ -182,7 +185,7 @@ window.BoardCanvas = (() => {
       if (!e.ctrlKey && !e.metaKey && keys[e.key.toLowerCase()]) choose(keys[e.key.toLowerCase()]);
     });
   }
-  function close() { active = false; ready = false; clearTimeout(reconnectTimer); if (socket) { socket.onclose = null; socket.close(); socket = null; } if (frame) cancelAnimationFrame(frame); frame = 0; gesture = null; images.clear(); }
+  function close() { active = false; ready = false; observer?.disconnect(); clearTimeout(reconnectTimer); if (socket) { socket.onclose = null; socket.close(); socket = null; } if (frame) cancelAnimationFrame(frame); frame = 0; gesture = null; images.clear(); }
   function open(url) { close(); endpoint = url; objects = []; selected = null; active = true; attempt = 0; zoom = 1; pan = { x: 0, y: 0 }; resize(); connect(); }
   return { init, open, close, fit };
 })();
