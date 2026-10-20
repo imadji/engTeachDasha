@@ -31,11 +31,11 @@
     "CLOUDFLARE_ACCOUNT_ID": "fdbaddc8ecf2a4827a85d8632aea6909",
 
     // App ID приложения Cloudflare Calls — вписывается после создания приложения
-    "REALTIMEKIT_APP_ID": "",
+    "REALTIMEKIT_APP_ID": "9d58f156-9f22-4e14-8a5a-614987903335",
 
     // Имена пресетов участников (создаются в настройках приложения Calls)
-    "REALTIMEKIT_HOST_PRESET": "host",
-    "REALTIMEKIT_STUDENT_PRESET": "student"
+    "REALTIMEKIT_HOST_PRESET": "group_call_host",
+    "REALTIMEKIT_STUDENT_PRESET": "group_call_participant"
   }
 
   // Секреты задаются командой (НЕ пишутся в этот файл):

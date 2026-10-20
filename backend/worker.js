@@ -36,22 +36,41 @@ export class BoardRoom extends DurableObject {
   // Операции сериализуются транзакцией; подтверждение получает и отправитель.
   async webSocketMessage(ws, raw) {
     try {
-      if (typeof raw !== 'string' || raw.length > 250000) fail('Слишком большой запрос');
+      if (typeof raw !== 'string' || raw.length > 600000) fail('Слишком большой запрос');
       const m = JSON.parse(raw); let board;
+      const validateObject = o => {
+        if (!o || !validId(o.id) || !['frame','pen','rect','ellipse','line','arrow','text','sticker','image'].includes(o.type)) fail('Некорректный объект');
+        if (!['x','y','w','h'].every(k => Number.isFinite(o[k]) && Math.abs(o[k]) <= 100000) || o.w <= 0 || o.h <= 0) fail('Некорректные координаты');
+        if (o.text !== undefined && (typeof o.text !== 'string' || o.text.length > 10000)) fail('Слишком длинный текст');
+        if (o.title !== undefined && (typeof o.title !== 'string' || o.title.length > 160)) fail('Слишком длинное название фрейма');
+        if (o.type === 'image') {
+          const isData = typeof o.url === 'string' && /^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(o.url);
+          if (isData) {
+            if (o.url.length > 480000) fail('Изображение слишком большое (макс. ~350 КБ после сжатия)');
+          } else {
+            const u = new URL(o.url);
+            if (!['http:','https:'].includes(u.protocol)) fail('Нужна HTTP(S) ссылка или изображение');
+          }
+        }
+        if (o.type === 'pen' && (!Array.isArray(o.points) || o.points.length > 2000 || !o.points.every(p => Number.isFinite(p.x) && Number.isFinite(p.y)))) fail('Некорректный рисунок');
+      };
       await this.ctx.storage.transaction(async tx => {
         board = await tx.get('board');
         if (!board || board.deleted) fail('Доска удалена');
         const list = board.objects;
         if (m.type === 'add' || m.type === 'update') {
           const o = m.object;
-          if (!o || !validId(o.id) || !['pen','rect','ellipse','line','arrow','text','sticker','image'].includes(o.type)) fail('Некорректный объект');
-          if (!['x','y','w','h'].every(k => Number.isFinite(o[k]) && Math.abs(o[k]) <= 100000) || o.w <= 0 || o.h <= 0) fail('Некорректные координаты');
-          if (o.text !== undefined && (typeof o.text !== 'string' || o.text.length > 10000)) fail('Слишком длинный текст');
-          if (o.type === 'image') { const u = new URL(o.url); if (!['http:','https:'].includes(u.protocol)) fail('Нужна HTTP(S) ссылка'); }
-          if (o.type === 'pen' && (!Array.isArray(o.points) || o.points.length > 2000 || !o.points.every(p => Number.isFinite(p.x) && Number.isFinite(p.y)))) fail('Некорректный рисунок');
+          validateObject(o);
           const i = list.findIndex(v => v.id === o.id);
           if (m.type === 'add' && i < 0) { if (list.length >= 400) fail('Лимит: 400 объектов'); list.push(o); }
           else if (i >= 0) list[i] = o;
+        } else if (m.type === 'batch' && Array.isArray(m.objects)) {
+          if (m.objects.length > 200) fail('Слишком много объектов в пакете');
+          for (const o of m.objects) {
+            validateObject(o);
+            const i = list.findIndex(v => v.id === o.id);
+            if (i >= 0) list[i] = o;
+          }
         } else if (m.type === 'delete') board.objects = list.filter(o => o.id !== m.objectId);
         else if (m.type === 'clear') board.objects = [];
         else if (m.type === 'reorder') {
@@ -59,7 +78,7 @@ export class BoardRoom extends DurableObject {
           const i = list.findIndex(o => o.id === m.objectId);
           if (i >= 0) { const [o] = list.splice(i, 1); list.splice(Math.max(0, Math.min(list.length, m.newIndex)), 0, o); }
         } else fail('Неизвестная операция');
-        if (JSON.stringify(board).length > 1000000) fail('Лимит размера доски: 1 МБ');
+        if (JSON.stringify(board).length > 1800000) fail('Лимит размера доски достигнут');
         board.revision++; await tx.put('board', board);
       });
       const message = JSON.stringify({ type: 'state', state: board, ack: m.opId });
