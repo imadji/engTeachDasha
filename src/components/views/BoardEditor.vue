@@ -7,8 +7,9 @@
  * - Модальное окно вставки изображений: загрузка с компьютера, Ctrl+V или прямая ссылка.
  */
 import { onMounted, onBeforeUnmount, ref } from 'vue';
-import { BoardCanvas, boardUi, compressImageFileToDataUrl } from '../../lib/boardCanvas';
+import { BoardCanvas, boardUi, compressImageFileToDataUrl, resolveBoardConfirm } from '../../lib/boardCanvas';
 import BaseModal from '../modals/BaseModal.vue';
+import TextEditModal from '../modals/TextEditModal.vue';
 
 const props = defineProps({ url: String });
 
@@ -279,6 +280,24 @@ onBeforeUnmount(() => {
       </form>
 
       <p v-if="imageError" class="form-error" role="alert">{{ imageError }}</p>
+    </BaseModal>
+
+    <!-- Модальное окно ввода текста (стикеры, текстовые блоки, названия фреймов) -->
+    <TextEditModal />
+
+    <!-- Модальное окно подтверждения очистки доски -->
+    <BaseModal
+      v-if="boardUi.confirmModalOpen"
+      :title="boardUi.confirmModal.title"
+      @close="resolveBoardConfirm(false)"
+    >
+      <p class="confirm-message">{{ boardUi.confirmModal.message }}</p>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" @click="resolveBoardConfirm(false)">Отмена</button>
+        <button type="button" class="btn btn-danger" @click="resolveBoardConfirm(true)">
+          {{ boardUi.confirmModal.confirmLabel }}
+        </button>
+      </div>
     </BaseModal>
   </div>
 </template>

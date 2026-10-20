@@ -17,8 +17,71 @@ export const boardUi = reactive({
   selectedType: null,
   frames: [],
   imageModalOpen: false,
-  pendingInsertPoint: null
+  pendingInsertPoint: null,
+  // Модальное окно ввода текста (замена браузерному prompt())
+  textModalOpen: false,
+  textModal: { title: 'Введите текст', value: '', multiline: true, placeholder: '', submitLabel: 'Сохранить' },
+  // Модальное окно подтверждения (замена браузерному confirm())
+  confirmModalOpen: false,
+  confirmModal: { title: 'Подтвердите действие', message: '', confirmLabel: 'Подтвердить' }
 });
+
+let textModalResolve = null;
+let confirmModalResolve = null;
+
+/**
+ * Открыть красивое модальное окно ввода текста вместо системного prompt().
+ * Возвращает Promise<string|null> — введённый текст или null при отмене.
+ */
+export function requestBoardText({ title = 'Введите текст', value = '', multiline = true, placeholder = '', submitLabel = 'Сохранить' } = {}) {
+  boardUi.textModal.title = title;
+  boardUi.textModal.value = value;
+  boardUi.textModal.multiline = multiline;
+  boardUi.textModal.placeholder = placeholder;
+  boardUi.textModal.submitLabel = submitLabel;
+  boardUi.textModalOpen = true;
+
+  return new Promise(resolve => {
+    textModalResolve = resolve;
+  });
+}
+
+/**
+ * Вызывается из TextEditModal при подтверждении ввода.
+ */
+export function resolveBoardText(value) {
+  boardUi.textModalOpen = false;
+  if (textModalResolve) {
+    textModalResolve(value);
+    textModalResolve = null;
+  }
+}
+
+/**
+ * Открыть модальное окно подтверждения вместо системного confirm().
+ * Возвращает Promise<boolean>.
+ */
+export function requestBoardConfirm({ title = 'Подтвердите действие', message = '', confirmLabel = 'Подтвердить' } = {}) {
+  boardUi.confirmModal.title = title;
+  boardUi.confirmModal.message = message;
+  boardUi.confirmModal.confirmLabel = confirmLabel;
+  boardUi.confirmModalOpen = true;
+
+  return new Promise(resolve => {
+    confirmModalResolve = resolve;
+  });
+}
+
+/**
+ * Вызывается из ConfirmModal: true — действие подтверждено, false — отменено.
+ */
+export function resolveBoardConfirm(value) {
+  boardUi.confirmModalOpen = false;
+  if (confirmModalResolve) {
+    confirmModalResolve(Boolean(value));
+    confirmModalResolve = null;
+  }
+}
 
 /**
  * Сжатие загруженного файла или картинки из буфера обмена в компактный dataURL (до ~1280px, JPEG/PNG < 320 КБ),
@@ -434,7 +497,7 @@ export const BoardCanvas = (() => {
     invalidate();
   }
 
-  function down(e) {
+  async function down(e) {
     if (!active || e.button > 1) return;
     canvas.setPointerCapture(e.pointerId);
     const p = point(e);
@@ -485,15 +548,20 @@ export const BoardCanvas = (() => {
         }
       };
     } else if (['text', 'sticker'].includes(tool)) {
-      const value = prompt(tool === 'sticker' ? 'Текст стикера:' : 'Текст блока:');
+      const isSticker = tool === 'sticker';
+      const value = await requestBoardText({
+        title: isSticker ? 'Новый стикер' : 'Новый текстовый блок',
+        placeholder: isSticker ? 'Например: Could you repeat, please?' : 'Текст заметки на доске…',
+        submitLabel: 'Добавить на доску'
+      });
       if (!value?.trim()) return;
       const o = {
         id: crypto.randomUUID(),
         type: tool,
         x: Math.round(p.x),
         y: Math.round(p.y),
-        w: tool === 'sticker' ? 220 : 260,
-        h: tool === 'sticker' ? 180 : 110,
+        w: isSticker ? 220 : 260,
+        h: isSticker ? 180 : 110,
         color: $('boardColorInput')?.value || '#243044',
         fill: $('boardStickerColorInput')?.value || '#fdf6e7',
         text: value.trim()
@@ -650,11 +718,15 @@ export const BoardCanvas = (() => {
     }
   }
 
-  function clearBoard() {
-    if (confirm('Очистить всю доску для всех участников?')) {
-      send({ type: 'clear' });
-      selected = null;
-    }
+  async function clearBoard() {
+    const confirmed = await requestBoardConfirm({
+      title: 'Очистить всю доску?',
+      message: 'Все рисунки, стикеры, фреймы и картинки будут удалены для всех участников. Действие нельзя отменить.',
+      confirmLabel: 'Очистить доску'
+    });
+    if (!confirmed) return;
+    send({ type: 'clear' });
+    selected = null;
   }
 
   async function onPaste(e) {
@@ -743,14 +815,24 @@ export const BoardCanvas = (() => {
       invalidate();
     });
 
-    canvas.addEventListener('dblclick', e => {
+    canvas.addEventListener('dblclick', async e => {
       const o = hit(point(e));
       if (!o || !ready || pending) return;
       if (o.type === 'frame') {
-        const value = prompt('Название фрейма:', o.title || 'Фрейм');
+        const value = await requestBoardText({
+          title: 'Переименовать фрейм',
+          value: o.title || 'Фрейм',
+          multiline: false,
+          placeholder: 'Например: Слайд 1 — Введение',
+          submitLabel: 'Переименовать'
+        });
         if (value?.trim()) send({ type: 'update', object: { ...o, title: value.trim() } });
       } else if (['sticker', 'text'].includes(o.type)) {
-        const value = prompt('Изменить текст:', o.text);
+        const value = await requestBoardText({
+          title: o.type === 'sticker' ? 'Изменить стикер' : 'Изменить текстовый блок',
+          value: o.text || '',
+          submitLabel: 'Сохранить'
+        });
         if (value?.trim()) send({ type: 'update', object: { ...o, text: value.trim() } });
       }
     });
